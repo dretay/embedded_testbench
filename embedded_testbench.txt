@@ -1,1 +1,1 @@
-./Debug/lib_cobs-c-0.5.0_cobsr.c.o ./Debug/lib_cobs-c-0.5.0_cobs.c.o ./Debug/src_hid.pb.c.o ./Debug/src_main.c.o ./Debug/lib_nanopb-0.3.9.3_pb_encode.c.o ./Debug/lib_nanopb-0.3.9.3_pb_common.c.o ./Debug/lib_nanopb-0.3.9.3_pb_decode.c.o
+./Debug/lib_cobs-c-0.5.0_cobsr.c.o ./Debug/lib_cobs-c-0.5.0_cobs.c.o ./Debug/src_hid.pb.c.o ./Debug/src_ProtoBuff.c.o ./Debug/src_main.c.o ./Debug/lib_nanopb-0.3.9.3_pb_encode.c.o ./Debug/lib_nanopb-0.3.9.3_pb_common.c.o ./Debug/lib_nanopb-0.3.9.3_pb_decode.c.o ./Debug/src_log.c.o

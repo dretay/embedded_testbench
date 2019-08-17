@@ -51,7 +51,7 @@ AR       := /usr/bin/ar rcu
 CXX      := /usr/bin/g++
 CC       := /usr/bin/gcc
 CXXFLAGS :=  -g -O0 -Wall $(Preprocessors)
-CFLAGS   :=  -g -O0 -Wall $(Preprocessors)
+CFLAGS   :=  -Wfatal-errors -g -O0 -std=c99 -Wall -Wextra -Wwrite-strings -Wno-parentheses -Warray-bounds $(Preprocessors)
 ASFLAGS  := 
 AS       := /usr/bin/as
 
@@ -60,7 +60,7 @@ AS       := /usr/bin/as
 ## User defined environment variables
 ##
 CodeLiteDir:=/usr/share/codelite
-Objects0=$(IntermediateDirectory)/lib_cobs-c-0.5.0_cobsr.c$(ObjectSuffix) $(IntermediateDirectory)/lib_cobs-c-0.5.0_cobs.c$(ObjectSuffix) $(IntermediateDirectory)/src_hid.pb.c$(ObjectSuffix) $(IntermediateDirectory)/src_main.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_encode.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_common.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_decode.c$(ObjectSuffix) 
+Objects0=$(IntermediateDirectory)/lib_cobs-c-0.5.0_cobsr.c$(ObjectSuffix) $(IntermediateDirectory)/lib_cobs-c-0.5.0_cobs.c$(ObjectSuffix) $(IntermediateDirectory)/src_hid.pb.c$(ObjectSuffix) $(IntermediateDirectory)/src_ProtoBuff.c$(ObjectSuffix) $(IntermediateDirectory)/src_main.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_encode.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_common.c$(ObjectSuffix) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_decode.c$(ObjectSuffix) $(IntermediateDirectory)/src_log.c$(ObjectSuffix) 
 
 
 
@@ -115,6 +115,14 @@ $(IntermediateDirectory)/src_hid.pb.c$(DependSuffix): src/hid.pb.c
 $(IntermediateDirectory)/src_hid.pb.c$(PreprocessSuffix): src/hid.pb.c
 	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_hid.pb.c$(PreprocessSuffix) src/hid.pb.c
 
+$(IntermediateDirectory)/src_ProtoBuff.c$(ObjectSuffix): src/ProtoBuff.c $(IntermediateDirectory)/src_ProtoBuff.c$(DependSuffix)
+	$(CC) $(SourceSwitch) "/home/drew/src/embedded_testbench/src/ProtoBuff.c" $(CFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_ProtoBuff.c$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/src_ProtoBuff.c$(DependSuffix): src/ProtoBuff.c
+	@$(CC) $(CFLAGS) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_ProtoBuff.c$(ObjectSuffix) -MF$(IntermediateDirectory)/src_ProtoBuff.c$(DependSuffix) -MM src/ProtoBuff.c
+
+$(IntermediateDirectory)/src_ProtoBuff.c$(PreprocessSuffix): src/ProtoBuff.c
+	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_ProtoBuff.c$(PreprocessSuffix) src/ProtoBuff.c
+
 $(IntermediateDirectory)/src_main.c$(ObjectSuffix): src/main.c $(IntermediateDirectory)/src_main.c$(DependSuffix)
 	$(CC) $(SourceSwitch) "/home/drew/src/embedded_testbench/src/main.c" $(CFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_main.c$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_main.c$(DependSuffix): src/main.c
@@ -146,6 +154,14 @@ $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_decode.c$(DependSuffix): lib/nano
 
 $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_decode.c$(PreprocessSuffix): lib/nanopb-0.3.9.3/pb_decode.c
 	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/lib_nanopb-0.3.9.3_pb_decode.c$(PreprocessSuffix) lib/nanopb-0.3.9.3/pb_decode.c
+
+$(IntermediateDirectory)/src_log.c$(ObjectSuffix): src/log.c $(IntermediateDirectory)/src_log.c$(DependSuffix)
+	$(CC) $(SourceSwitch) "/home/drew/src/embedded_testbench/src/log.c" $(CFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_log.c$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/src_log.c$(DependSuffix): src/log.c
+	@$(CC) $(CFLAGS) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_log.c$(ObjectSuffix) -MF$(IntermediateDirectory)/src_log.c$(DependSuffix) -MM src/log.c
+
+$(IntermediateDirectory)/src_log.c$(PreprocessSuffix): src/log.c
+	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_log.c$(PreprocessSuffix) src/log.c
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)

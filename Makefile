@@ -32,7 +32,7 @@ $(BUILD_DIR)/%.c.o: %.c
 
 # pb model compile
 .PHONY: protobuf
-protobuf: $(PBMODELS)
+protobuff: $(PBMODELS)
 	$(PROTOC) --nanopb_out=. $<
 
 .PHONY: test
