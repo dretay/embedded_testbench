@@ -12,7 +12,8 @@
 
 struct protobuff {
     bool(*marshal)(void *src, const pb_field_t fields[], pb_byte_t *buf, size_t bufsize, bool delimited);			
-    bool(*unmarshal)(pb_byte_t *buf, size_t bufsize, bool delimited);			
+    bool(*unmarshal)(pb_byte_t *buf, size_t bufsize, bool delimited);	
+    void(*hello)(void);		
 };
 
 extern const struct protobuff ProtoBuff;

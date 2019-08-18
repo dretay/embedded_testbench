@@ -16,3 +16,9 @@ test/__pycache__/
 lib64
 
 pyvenv.cfg
+
+test/test_runners/
+
+src/hid.pb.c
+
+src/hid.pb.h
