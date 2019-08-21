@@ -1,4 +1,8 @@
 #include "ProtoBuff.h"
+
+static volatile Handler handlers[PROTOBUFF_MAX_HANDLERS];
+static uint16_t handlers_usage_mask = 0;
+
 static const pb_field_t* decode_unionmessage_type(pb_istream_t *stream)
 {
 	pb_wire_type_t wire_type;
@@ -55,9 +59,23 @@ static bool marshal(void *src, const pb_field_t fields[], pb_byte_t *buf, size_t
     return pb_encode_delimited(&stream, fields, src);	
   }
 }
-
+static bool idx_valid(int8_t idx) {
+  return idx >= 0 && idx < PROTOBUFF_MAX_HANDLERS;
+}
+static int8_t find_handler(pb_field_t *type) {
+  uint8_t i = 0;
+  for (i = 0; i < PROTOBUFF_MAX_HANDLERS; i++) {
+    if (bitRead(handlers_usage_mask, i) == 1) {
+      if (handlers[i].type == type) {
+        return i;
+      }     
+    } 
+  } 
+  return -1;
+}
 static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
 {
+    _DEBUG("foo",0);
     pb_istream_t parent_stream = pb_istream_from_buffer(buf, bufsize); 
     pb_istream_t *decode_stream = &parent_stream;
     if(delimited)
@@ -72,23 +90,27 @@ static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
     }
     
     const pb_field_t *type = decode_unionmessage_type(decode_stream);
-    if (type == InputReport_fields)
-    {			
-      _DEBUG("InputReport type",0);
-      InputReport report;
-      if (decode_unionmessage_contents(decode_stream, InputReport_fields, &report))
-      {				
-        _DEBUG("%s\n",report.data);            
-      }				
-      else
-      {
-        _ERROR("unable to decode",0);
-      }
+    int idx = find_handler(type);
+    if (idx_valid(idx)) {
+      handlers[idx].callback(decode_stream);
     }
     else
     {			
       _ERROR("unknown type",0);
     }   
+    // if (type == InputReport_fields)
+    // {			
+    //   _DEBUG("InputReport type",0);
+    //   InputReport report;
+    //   if (decode_unionmessage_contents(decode_stream, InputReport_fields, &report))
+    //   {				
+    //     _DEBUG("%s\n",report.data);            
+    //   }				
+    //   else
+    //   {
+    //     _ERROR("unable to decode",0);
+    //   }
+    // }
 
     if(delimited)
     {
@@ -99,14 +121,31 @@ static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
     } 
     return true;    
 }
-static void hello(void)
+
+
+static int8_t get_unused_idx() {
+  uint8_t i = 0;
+  for (i = 0; i < PROTOBUFF_MAX_HANDLERS; i++) {
+    if (bitRead(handlers_usage_mask, i) == 0) {
+      bitSet(handlers_usage_mask, i);
+      return i;
+    } 
+  } 
+  return -1;
+}
+static bool add_handler(const pb_field_t *type, void* callback)
 {
-  _DEBUG("HELLO!",0);
+  int8_t idx = get_unused_idx();
+  if (idx_valid(idx)) { 
+    handlers[idx].callback = callback;
+    handlers[idx].type = type;
+    return true;
+  }
+  return false;
 }
 
 const struct protobuff ProtoBuff = { 
 	.marshal = marshal,			
   .unmarshal = unmarshal,			
-  .hello = hello,
+  .add_handler = add_handler,
 };
-
