@@ -62,7 +62,7 @@ static bool marshal(void *src, const pb_field_t fields[], pb_byte_t *buf, size_t
 static bool idx_valid(int8_t idx) {
   return idx >= 0 && idx < PROTOBUFF_MAX_HANDLERS;
 }
-static int8_t find_handler(pb_field_t *type) {
+static int8_t find_handler(const pb_field_t *type) {
   uint8_t i = 0;
   for (i = 0; i < PROTOBUFF_MAX_HANDLERS; i++) {
     if (bitRead(handlers_usage_mask, i) == 1) {
@@ -74,8 +74,7 @@ static int8_t find_handler(pb_field_t *type) {
   return -1;
 }
 static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
-{
-    _DEBUG("foo",0);
+{    
     pb_istream_t parent_stream = pb_istream_from_buffer(buf, bufsize); 
     pb_istream_t *decode_stream = &parent_stream;
     if(delimited)
@@ -92,7 +91,7 @@ static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
     const pb_field_t *type = decode_unionmessage_type(decode_stream);
     int idx = find_handler(type);
     if (idx_valid(idx)) {
-      handlers[idx].callback(decode_stream);
+      handlers[idx].callback(decode_stream, type);
     }
     else
     {			
@@ -148,4 +147,5 @@ const struct protobuff ProtoBuff = {
 	.marshal = marshal,			
   .unmarshal = unmarshal,			
   .add_handler = add_handler,
+  .decode = decode_unionmessage_contents,
 };
