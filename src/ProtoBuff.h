@@ -1,5 +1,6 @@
 #pragma once
 
+#include<stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <pb.h>
@@ -23,6 +24,7 @@ struct protobuff {
     bool(*unmarshal)(pb_byte_t *buf, size_t bufsize, bool delimited);	
     bool(*add_handler)(const pb_field_t *type, void* callback);		
     bool(*decode)(pb_istream_t *stream, const pb_field_t fields[], void *dest_struct);
+    void(*clear_handlers)(void);
 };
 
 extern const struct protobuff ProtoBuff;

@@ -11,7 +11,7 @@ SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 -name '*.cpp' -or -name
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(LIB_DIRS) -maxdepth 1 -type d)
-CFLAGS ?= $(INC_FLAGS) -DPB_FIELD_16BIT -fPIC
+CFLAGS ?= $(INC_FLAGS) -DPB_FIELD_16BIT -fPIC -Wno-format-extra-args
 PROTOC := /home/drew/src/nanopb-0.3.9.3/generator-bin/protoc
 
 UNITY_ROOT=/home/drew/src/Unity
@@ -34,7 +34,10 @@ $(BUILD_DIR)/%.c.o: %.c
 test: $(TESTS)
 	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $^  test/test_runners/$(notdir $^)
 	$(CC) $(CFLAGS) $(INC_FLAGS) $(UNITY_ROOT)/src/unity.c $^ test/test_runners/$(notdir $^) $(OBJS) -o $(BUILD_DIR)/$(notdir $^).out
-	./$(BUILD_DIR)/$(notdir $^).out
+	$(BUILD_DIR)/$(notdir $^).out
+
+valgrind: $(TESTS)
+	/usr/bin/valgrind  --suppressions=valgrind.memcheck.supp --gen-suppressions=all --tool=memcheck --leak-check=full $(BUILD_DIR)/$(notdir $^).out
 
 # pb model compile
 .PHONY: protobuf

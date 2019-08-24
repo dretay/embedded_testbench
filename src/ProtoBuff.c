@@ -97,19 +97,6 @@ static bool unmarshal(pb_byte_t *buf, size_t bufsize, bool delimited)
     {			
       _ERROR("unknown type",0);
     }   
-    // if (type == InputReport_fields)
-    // {			
-    //   _DEBUG("InputReport type",0);
-    //   InputReport report;
-    //   if (decode_unionmessage_contents(decode_stream, InputReport_fields, &report))
-    //   {				
-    //     _DEBUG("%s\n",report.data);            
-    //   }				
-    //   else
-    //   {
-    //     _ERROR("unable to decode",0);
-    //   }
-    // }
 
     if(delimited)
     {
@@ -134,13 +121,28 @@ static int8_t get_unused_idx() {
 }
 static bool add_handler(const pb_field_t *type, void* callback)
 {
-  int8_t idx = get_unused_idx();
+  int idx = find_handler(type);
+  if (idx_valid(idx)) 
+  {
+    _ERROR("type entry already exists",0);
+    return false;
+  }
+  idx = get_unused_idx();
   if (idx_valid(idx)) { 
     handlers[idx].callback = callback;
     handlers[idx].type = type;
     return true;
   }
+  else
+  {
+    _ERROR("handler list is full",0);
+  }
   return false;
+}
+void clear_handlers(void)
+{
+  memset((void*)handlers,0,sizeof(handlers));
+  handlers_usage_mask = 0;
 }
 
 const struct protobuff ProtoBuff = { 
@@ -148,4 +150,5 @@ const struct protobuff ProtoBuff = {
   .unmarshal = unmarshal,			
   .add_handler = add_handler,
   .decode = decode_unionmessage_contents,
+  .clear_handlers = clear_handlers,
 };
