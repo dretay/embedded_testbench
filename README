@@ -1,1 +1,4 @@
 to dump content of a shared libary: nm -D build/testbench.so
+
+sublime plugins
+- clang-format (webkit style)

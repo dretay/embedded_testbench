@@ -1,3 +1,5 @@
+SHELL:=/bin/bash
+
 TARGET_SO ?= testbench.so
 
 BUILD_DIR ?= ./build
@@ -18,31 +20,41 @@ UNITY_ROOT=/home/drew/src/Unity
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 
 $(BUILD_DIR)/$(TARGET_SO): $(OBJS)
-	$(LD) $(OBJS) -shared -o $@
+	@$(LD) $(OBJS) -shared -o $@
 
 # assembly
 $(BUILD_DIR)/%.s.o: %.s
-	$(MKDIR_P) $(dir $@)
-	$(AS) $(ASFLAGS) -c $< -o $@
+	@$(MKDIR_P) $(dir $@)
+	@$(AS) $(ASFLAGS) -c $< -o $@
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c 
-	$(MKDIR_P) $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ 
+	@$(MKDIR_P) $(dir $@)
+	@ $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ 
 
-.PHONY: test
-test: $(TESTS)
-	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $^  test/test_runners/$(notdir $^)
-	$(CC) $(CFLAGS) $(INC_FLAGS) $(UNITY_ROOT)/src/unity.c $^ test/test_runners/$(notdir $^) $(OBJS) -o $(BUILD_DIR)/$(notdir $^).out
-	$(BUILD_DIR)/$(notdir $^).out
+.SILENT: test
+test: $(TESTS) 
+	@
+	for file in $(notdir $^) ; do \
+    	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $(TEST_DIRS)/$${file} $(TEST_DIRS)/test_runners/$${file} ;\
+		$(CC) $(CFLAGS) $(INC_FLAGS) $(UNITY_ROOT)/src/unity.c $(TEST_DIRS)/$${file} $(TEST_DIRS)/test_runners/$${file} $(OBJS) -o $(BUILD_DIR)/$${file}.out ;\
+		$(BUILD_DIR)/$${file}.out -v &>> $(BUILD_DIR)/output ;\
+    done
+.PHONEY:print
+print:
+	@echo "-----------------------IGNORES-----------------------"
+	@echo `grep -s IGNORE $(BUILD_DIR)/output`
+	@echo "-----------------------FAILURES-----------------------"
+	@echo `grep -s FAIL $(BUILD_DIR)/output`
+	@echo "DONE"
 
-valgrind: $(TESTS)
-	/usr/bin/valgrind  --suppressions=valgrind.memcheck.supp --gen-suppressions=all --tool=memcheck --leak-check=full $(BUILD_DIR)/$(notdir $^).out
+# valgrind: $(TESTS)
+# 	/usr/bin/valgrind  --suppressions=valgrind.memcheck.supp --gen-suppressions=all --tool=memcheck --leak-check=full $(BUILD_DIR)/$(notdir $^).out
 
 # pb model compile
 .PHONY: protobuf
 protobuff: $(PBMODELS)
-	$(PROTOC) --nanopb_out=. $<
+	@$(PROTOC) --nanopb_out=. $<
 	
 jupyter: pythondeps
 	( \
@@ -58,9 +70,9 @@ pythondeps:
 
 .PHONY: clean
 clean:
-	$(RM) -r $(BUILD_DIR)
-	$(RM) -r $(TEST_DIRS)/test_runners/*
-	find $(SRC_DIRS) -type f -name '*.pb.*' -delete 
+	@$(RM) -r $(BUILD_DIR)
+	@$(RM) -r $(TEST_DIRS)/test_runners/*
+	@find $(SRC_DIRS) -type f -name '*.pb.*' -delete 
 
 -include $(DEPS)
 

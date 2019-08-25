@@ -1,6 +1,6 @@
 #pragma once
 
-#define lowByte(w) ((w) & 0xFF)
+#define lowByte(w) ((w)&0xFF)
 #define highByte(w) (((w) >> 8) & 0xFF)
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
 #define bitSet(value, bit) ((value) |= (1UL << (bit)))
