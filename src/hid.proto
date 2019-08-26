@@ -22,7 +22,8 @@ message Packet{
 	enum Flag {
 		FIRST = 0;
 		CONTINUE = 1;
-		LAST = 2;		
+		LAST = 2;	
+		FIRSTLAST = 3;	
 	}
 	required Flag flag = 4;
 }

@@ -20,21 +20,21 @@ UNITY_ROOT=/home/drew/src/Unity
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 
 $(BUILD_DIR)/$(TARGET_SO): $(OBJS)
-	@$(LD) $(OBJS) -shared -o $@
+	$(LD) $(OBJS) -shared -o $@
 
 # assembly
 $(BUILD_DIR)/%.s.o: %.s
-	@$(MKDIR_P) $(dir $@)
-	@$(AS) $(ASFLAGS) -c $< -o $@
+	$(MKDIR_P) $(dir $@)
+	$(AS) $(ASFLAGS) -c $< -o $@
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c 
-	@$(MKDIR_P) $(dir $@)
-	@ $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ 
+	$(MKDIR_P) $(dir $@)
+	 $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ 
 
+#TODO: this is really, really bad I need to clean this up but I don't want to right now...
 .SILENT: test
 test: $(TESTS) 
-	@
 	for file in $(notdir $^) ; do \
     	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $(TEST_DIRS)/$${file} $(TEST_DIRS)/test_runners/$${file} ;\
 		$(CC) $(CFLAGS) $(INC_FLAGS) $(UNITY_ROOT)/src/unity.c $(TEST_DIRS)/$${file} $(TEST_DIRS)/test_runners/$${file} $(OBJS) -o $(BUILD_DIR)/$${file}.out ;\
@@ -42,11 +42,13 @@ test: $(TESTS)
     done
 .PHONEY:print
 print:
-	@echo "-----------------------IGNORES-----------------------"
+	@echo ""
+	@echo "-----------------------TEST RESULTS-----------------------"
+	@echo `grep -s IGNORE $(BUILD_DIR)/output|wc -l` "tests ignored"
 	@echo `grep -s IGNORE $(BUILD_DIR)/output`
-	@echo "-----------------------FAILURES-----------------------"
+	@echo `grep -s FAIL $(BUILD_DIR)/output|wc -l` "tests failed"
 	@echo `grep -s FAIL $(BUILD_DIR)/output`
-	@echo "DONE"
+	@echo `grep -s PASS $(BUILD_DIR)/output|wc -l` "tests passed"
 
 # valgrind: $(TESTS)
 # 	/usr/bin/valgrind  --suppressions=valgrind.memcheck.supp --gen-suppressions=all --tool=memcheck --leak-check=full $(BUILD_DIR)/$(notdir $^).out
