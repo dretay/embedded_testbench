@@ -37,20 +37,21 @@ UNITY_ROOT=/home/drew/src/Unity
 
 #project source files
 SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 -name '*.c')
-OBJS = $(SRCS:%=$(BUILD_DIR)%.o)
+OBJS = $(SRCS:%=$(BUILD_DIR)%.o) $(PB_OBJS)
 DEPS = $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(LIB_DIRS) -maxdepth 1 -type d)
 
+#misc variables
 CFLAGS = $(INC_FLAGS) -DPB_FIELD_16BIT -fPIC -Wno-format-extra-args
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
+CURRENT_DIR = $(notdir $(shell pwd))
 
-$(info $$PB_OBJS is [${PB_OBJS}])
 
 .PHONY: all
-all: $(PBMODELS) $(RUNNERS) $(OBJS) build/src/hid.pb.c.o $(TEST_OBJS) $(RESULTS) test
+all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
 
 .PHONY: test
-test: 
+test: all $(TEST_OBJS) $(RESULTS) 
 	@echo ""
 	@echo "-----------------------TEST RESULTS-----------------------"
 	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
@@ -58,13 +59,19 @@ test:
 	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
 	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt`
 	@echo `grep -s PASS $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
-#tests
-$(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.out
+
+#link objects into an so to be included elsewhere
+$(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
+	$(LD) $(OBJS) -shared -o $@
+
+#execute tests
+$(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 	$(MKDIR) $(dir $@)
 	-./$< > $@ 2>&1
 
-$(BUILD_DIR)%.c.o.out: $(TEST_OUTPUT)%.c.o
-	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(PB_OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
+#build the test runners
+$(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
+	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
 
 # assembly
 $(BUILD_DIR)%.s.o: %.s	
@@ -85,7 +92,7 @@ $(TEST_RUNNERS)%.c:: $(TEST_DIRS)%.c
 	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $< $@
 
 .PHONY: jupyter
-jupyter: pythondeps
+jupyter: all pythondeps
 	( \
 		jupyter notebook; \
 	)
@@ -104,8 +111,6 @@ pythondeps:
 .PHONY: clean
 clean:
 	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
-# 	@$(RM) -r $(TEST_DIRS)/test_runners/*
-# 	@find $(SRC_DIRS) -type f -name '*.pb.*' -delete 
 
 .PRECIOUS: $(TEST_RESULTS_DIR)%.txt
 .PRECIOUS: $(BUILD_DIR)%.c.o.out
