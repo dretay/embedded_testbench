@@ -35,6 +35,11 @@ RESULTS = $(patsubst $(TEST_DIRS)Test%.c,$(TEST_RESULTS_DIR)Test%.txt,$(SRCT) )
 TEST_OBJS = $(SRCT:%=$(BUILD_DIR)%.o)
 UNITY_ROOT=/home/drew/src/Unity
 
+#valgrind stuff
+VALGRIND = /usr/bin/valgrind
+VALGRIND_SUPPS = valgrind.memcheck.supp
+MEM_LEAKS = `grep -Poh 'ERROR SUMMARY:\K ([0-9]+)' $(TEST_RESULTS_DIR)*| awk '{ SUM += $$1} END { print SUM }'`
+
 #project source files
 SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 -name '*.c')
 OBJS = $(SRCS:%=$(BUILD_DIR)%.o) $(PB_OBJS)
@@ -46,19 +51,20 @@ CFLAGS = $(INC_FLAGS) -DPB_FIELD_16BIT -fPIC -Wno-format-extra-args
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 CURRENT_DIR = $(notdir $(shell pwd))
 
-
 .PHONY: all
 all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
 
 .PHONY: test
 test: all $(TEST_OBJS) $(RESULTS) 
 	@echo ""
-	@echo "-----------------------TEST RESULTS-----------------------"
+	@echo "-----------------------TESTING SUMMARY-----------------------"
 	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
 	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt`
 	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
 	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt`
 	@echo `grep -s PASS $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
+	@echo ""
+	@echo "$(MEM_LEAKS) memory leak(s) detected"
 
 #link objects into an so to be included elsewhere
 $(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
@@ -67,7 +73,7 @@ $(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
 #execute tests
 $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 	$(MKDIR) $(dir $@)
-	-./$< > $@ 2>&1
+	-$(VALGRIND) --suppressions=$(VALGRIND_SUPPS) --gen-suppressions=all --tool=memcheck --leak-check=full $< > $@ 2>&1
 
 #build the test runners
 $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
