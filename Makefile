@@ -52,9 +52,13 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 CURRENT_DIR = $(notdir $(shell pwd))
 
 .PHONY: all
+.PHONY: test
+.PHONY: jupyter
+.PHONY: pythondeps
+.PHONY: clean
+	
 all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
 
-.PHONY: test
 test: all $(TEST_OBJS) $(RESULTS) 
 	@echo ""
 	@echo "-----------------------TESTING SUMMARY-----------------------"
@@ -97,22 +101,20 @@ $(SRC_DIRS)%.pb.c:: $(SRC_DIRS)%.proto
 $(TEST_RUNNERS)%.c:: $(TEST_DIRS)%.c
 	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $< $@
 
-.PHONY: jupyter
 jupyter: all pythondeps
 	( \
 		jupyter notebook; \
 	)
 
-.PHONY: pythondeps
 pythondeps: 
 	( \
 		. ./bin/activate; \
 		pip install -r ./requirements.txt; \
 	)
 
-.PHONY: clean
 clean:
 	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
 
 .PRECIOUS: $(TEST_RESULTS_DIR)%.txt
 .PRECIOUS: $(BUILD_DIR)%.c.o.out
+.PRECIOUS: $(PBMODELS)
