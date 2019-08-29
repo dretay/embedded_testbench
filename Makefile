@@ -110,10 +110,6 @@ pythondeps:
 		pip install -r ./requirements.txt; \
 	)
 
-# .PHONY: valgrind
-# valgrind: $(TESTS)
-# 	/usr/bin/valgrind  --suppressions=valgrind.memcheck.supp --gen-suppressions=all --tool=memcheck --leak-check=full $(BUILD_DIR)/$(notdir $^).out
-
 .PHONY: clean
 clean:
 	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
