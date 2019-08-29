@@ -41,9 +41,8 @@ VALGRIND_SUPPS = valgrind.memcheck.supp
 MEM_LEAKS = `grep -Poh 'ERROR SUMMARY:\K ([0-9]+)' $(TEST_RESULTS_DIR)*| awk '{ SUM += $$1} END { print SUM }'`
 
 #project source files
-SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 -name '*.c')
-OBJS = $(SRCS:%=$(BUILD_DIR)%.o) $(PB_OBJS)
-DEPS = $(OBJS:.o=.d)
+SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 \( -iname "*.c" ! -iname "*.pb.c" \))
+OBJS = $(SRCS:%=$(BUILD_DIR)%.o) 
 INC_DIRS := $(shell find $(LIB_DIRS) -maxdepth 1 -type d)
 
 #misc variables
@@ -57,7 +56,7 @@ CURRENT_DIR = $(notdir $(shell pwd))
 .PHONY: pythondeps
 .PHONY: clean
 	
-all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
+all: $(PBMODELS) $(RUNNERS) $(OBJS) $(PB_OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
 
 test: all $(TEST_OBJS) $(RESULTS) 
 	@echo ""
@@ -72,7 +71,7 @@ test: all $(TEST_OBJS) $(RESULTS)
 
 #link objects into an so to be included elsewhere
 $(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
-	$(LD) $(OBJS) -shared -o $@
+	$(LD) $(OBJS) $(PB_OBJS) -shared -o $@
 
 #execute tests
 $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
@@ -81,7 +80,7 @@ $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 
 #build the test runners
 $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
-	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
+	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(PB_OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
 
 # assembly
 $(BUILD_DIR)%.s.o: %.s	
