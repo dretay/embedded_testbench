@@ -65,8 +65,6 @@ CURRENT_DIR = $(notdir $(shell pwd))
 .PHONY: clean
 .PHONY: cppcheck
 
-$(info $$CPPCHECK_RESULTS is [${CPPCHECK_RESULTS}])
-
 all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so cppcheck
 
 cppcheck: $(CPPCHECK_RESULTS)
