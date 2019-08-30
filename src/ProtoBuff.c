@@ -71,8 +71,8 @@ static bool unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited)
 {
     pb_istream_t parent_stream = pb_istream_from_buffer(buf, bufsize);
     pb_istream_t* decode_stream = &parent_stream;
+    pb_istream_t sub_stream;
     if (delimited) {
-        pb_istream_t sub_stream;
         if (!pb_make_string_substream(&parent_stream, &sub_stream)) {
             _ERROR("unable to make substream", 0);
             return false;

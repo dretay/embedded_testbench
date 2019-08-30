@@ -15,7 +15,8 @@ endif
 
 #directories
 BUILD_DIR = build/
-TEST_RESULTS_DIR = build/results/
+TEST_RESULTS_DIR = build/test_results/
+CPPCHECK_RESULTS_DIR = build/cppcheck_results/
 TEST_OUTPUT = build/test/
 SRC_DIRS = src/
 LIB_DIRS = lib/
@@ -31,7 +32,7 @@ PB_OBJS = $(patsubst $(SRC_DIRS)%.proto,$(BUILD_DIR)$(SRC_DIRS)%.pb.c.o,$(SRCPB)
 #unity testing files
 SRCT = $(wildcard $(TEST_DIRS)*.c)
 RUNNERS = $(patsubst $(TEST_DIRS)%.c,$(TEST_RUNNERS)%.c,$(SRCT) )
-RESULTS = $(patsubst $(TEST_DIRS)Test%.c,$(TEST_RESULTS_DIR)Test%.txt,$(SRCT) )
+TEST_RESULTS = $(patsubst $(TEST_DIRS)Test%.c,$(TEST_RESULTS_DIR)Test%.txt,$(SRCT) )
 TEST_OBJS = $(SRCT:%=$(BUILD_DIR)%.o)
 UNITY_ROOT=/home/drew/src/Unity
 
@@ -42,11 +43,18 @@ MEM_LEAKS = `grep -Poh 'ERROR SUMMARY:\K ([0-9]+)' $(TEST_RESULTS_DIR)*| awk '{ 
 
 #project source files
 SRCS := $(shell find $(LIB_DIRS) $(SRC_DIRS) -maxdepth 2 \( -iname "*.c" ! -iname "*.pb.c" \))
-OBJS = $(SRCS:%=$(BUILD_DIR)%.o) 
+OBJS = $(SRCS:%=$(BUILD_DIR)%.o) $(PB_OBJS)
 INC_DIRS := $(shell find $(LIB_DIRS) -maxdepth 1 -type d)
 
+#cppcheck
+CPPCHECK = cppcheck
+CPPCHECK_FILES := $(shell find $(SRC_DIRS) -maxdepth 2 \( -iname "*.c" ! -iname "*.pb.c" \))
+CPPCHECK_FLAGS = -q --enable=all --inconclusive --suppress=missingIncludeSystem
+CPPCHECK_RESULTS = $(CPPCHECK_FILES:%=$(CPPCHECK_RESULTS_DIR)%.txt) 
+
 #misc variables
-CFLAGS = $(INC_FLAGS) -DPB_FIELD_16BIT -fPIC -Wno-format-extra-args
+DIRECTIVES = -DPB_FIELD_16BIT
+CFLAGS = $(INC_FLAGS) $(DIRECTIVES) -fPIC -Wno-format-extra-args
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 CURRENT_DIR = $(notdir $(shell pwd))
 
@@ -55,10 +63,20 @@ CURRENT_DIR = $(notdir $(shell pwd))
 .PHONY: jupyter
 .PHONY: pythondeps
 .PHONY: clean
-	
-all: $(PBMODELS) $(RUNNERS) $(OBJS) $(PB_OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so
+.PHONY: cppcheck
 
-test: all $(TEST_OBJS) $(RESULTS) 
+$(info $$CPPCHECK_RESULTS is [${CPPCHECK_RESULTS}])
+
+all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so cppcheck
+
+cppcheck: $(CPPCHECK_RESULTS)
+	@echo ""
+	@echo "-----------------------CPPCHECK SUMMARY-----------------------"
+	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"	
+	@echo `find build/cppcheck_results/ -type f -exec grep error {} \;|wc -l` "code errors"
+	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
+
+test: all $(TEST_OBJS) $(TEST_RESULTS) 
 	@echo ""
 	@echo "-----------------------TESTING SUMMARY-----------------------"
 	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
@@ -71,7 +89,7 @@ test: all $(TEST_OBJS) $(RESULTS)
 
 #link objects into an so to be included elsewhere
 $(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
-	$(LD) $(OBJS) $(PB_OBJS) -shared -o $@
+	$(LD) $(OBJS) -shared -o $@
 
 #execute tests
 $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
@@ -80,12 +98,17 @@ $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 
 #build the test runners
 $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
-	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(PB_OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
+	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
 
 # assembly
 $(BUILD_DIR)%.s.o: %.s	
 	$(MKDIR) $(dir $@)
 	$(AS) $(ASFLAGS) -c $< -o $@
+
+#execute cppcheck
+$(CPPCHECK_RESULTS_DIR)%.c.txt: %.c 
+	$(MKDIR) $(dir $@)
+	$(CPPCHECK) $(INC_FLAGS) $(DIRECTIVES) $(CPPCHECK_FLAGS) $< > $@ 2>&1
 
 # c source
 $(BUILD_DIR)%.c.o: %.c 
@@ -112,7 +135,7 @@ pythondeps:
 	)
 
 clean:
-	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
+	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(TEST_RESULTS) $(CPPCHECK_RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
 
 .PRECIOUS: $(TEST_RESULTS_DIR)%.txt
 .PRECIOUS: $(BUILD_DIR)%.c.o.out
