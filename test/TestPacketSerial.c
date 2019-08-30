@@ -42,8 +42,35 @@ void test_clearing_handlers(void)
     TEST_ASSERT_EQUAL(NULL, PacketSerial.get_rx_handler());
 }
 
-void test_send(void)
+void test_crc8(void)
 {
-    char test[] = { 't', 'e', 's', 't' };
-    PacketSerial.send(test, sizeof(test));
+    char test1[] = { 't', 'e', 's', 't' };
+    char test2[] = { 't', 'e', 's', 's' };
+    u8 crc1 = PacketSerial.calculate_crc(test1, sizeof(test1));
+    u8 crc11 = PacketSerial.calculate_crc(test1, sizeof(test1));
+    u8 crc2 = PacketSerial.calculate_crc(test2, sizeof(test2));
+
+    TEST_ASSERT_EQUAL(crc1, crc11);
+    TEST_ASSERT_NOT_EQUAL(crc1, crc2);
+}
+void test_build_packet(void)
+{
+    char data[] = { 't', 'e', 's', 't' };
+    u8 sequence_number = 1;
+    u8 crc = PacketSerial.calculate_crc(data, sizeof(data));
+    Packet packet = Packet_init_zero;
+    Packet_Flag flag = Packet_Flag_FIRST;
+    PacketSerial.build_packet(&packet, data, sizeof(data), sequence_number, flag);
+
+    TEST_ASSERT_EQUAL_STRING(packet.data, data);
+    TEST_ASSERT_EQUAL(packet.sequence_number, sequence_number);
+    TEST_ASSERT_EQUAL(packet.crc, crc);
+    TEST_ASSERT_EQUAL(packet.flag, flag);
+}
+void test_send_small_packet(void)
+{
+    char data[] = { 't', 'e', 's', 't' };
+    bool success = PacketSerial.send(data, sizeof(data));
+
+    TEST_ASSERT_TRUE(success);
 }

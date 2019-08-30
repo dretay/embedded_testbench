@@ -13,8 +13,11 @@
 
 #include "bithelper.h"
 #include "log.h"
+#include "type_shortcuts.h"
 
 typedef void (*PACKETSERIAL_HANDLER_FNP)(char*, size_t);
+
+#define member_size(type, member) sizeof(((type*)0)->member)
 
 struct packetserial {
     bool (*send)(const char* buffer, size_t size);
@@ -26,6 +29,8 @@ struct packetserial {
     (void);
     void (*register_tx_handler)(void* handler);
     void (*clear_handlers)(void);
+    u8 (*calculate_crc)(const char* buffer, size_t size);
+    void (*build_packet)(Packet* packet, const char* buffer, size_t size, u8 sequence_number, Packet_Flag flag);
 };
 
 extern const struct packetserial PacketSerial;

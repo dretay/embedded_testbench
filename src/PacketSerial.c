@@ -3,22 +3,42 @@
 static void (*tx_handler)(char* buffer, size_t size);
 static void (*rx_handler)(char* buffer, size_t size);
 
+static u8 calculate_crc(const char* buffer, size_t size)
+{
+    u8 crc = 0;
+    for (int i = 0; i < size; i++) {
+        crc = Crc8(crc, buffer[i]);
+    }
+    return crc;
+}
+static void build_packet(Packet* packet, const char* buffer, size_t size, u8 sequence_number, Packet_Flag flag)
+{
+    strncpy(packet->data, buffer, size);
+    packet->crc = calculate_crc(packet->data, size);
+    packet->sequence_number = sequence_number;
+    packet->flag = flag;
+}
 static bool send(const char* buffer, size_t size)
 {
-    Packet packet = Packet_init_zero;
-    unsigned int data_chunk_size = sizeof(packet.data);
-    for (int i = 0; i < size / data_chunk_size; i++) {
-        strncpy(packet.data, &buffer[i * data_chunk_size], data_chunk_size);
-        unsigned char crc = 0;
-        for (int count = 0; count < sizeof(packet.data); count++) {
-            crc = Crc8(crc, packet.data[count]);
+    unsigned int data_chunk_size = member_size(Packet, data);
+    unsigned int total_chunks = size / data_chunk_size;
+    bool return_status = false;
+    for (int i = 0; i < total_chunks; i++) {
+        Packet packet = Packet_init_zero;
+        Packet_Flag flag = Packet_Flag_FIRST;
+
+        if (i == 0 && i == total_chunks) {
+            flag = Packet_Flag_FIRSTLAST;
         }
-        packet.crc = crc;
-        packet.sequence_number = i;
-        packet.flag = Packet_Flag_FIRST;
+        if (i > 0 & i < total_chunks) {
+            flag = Packet_Flag_CONTINUE;
+        } else if (i == total_chunks) {
+            flag = Packet_Flag_LAST;
+        }
+
+        build_packet(&packet, &buffer[i * data_chunk_size], data_chunk_size, i, flag);
     }
-    // printf("%s %lu", buffer, size);
-    return false;
+    return return_status;
 }
 static void update(void)
 {
@@ -54,4 +74,6 @@ const struct packetserial PacketSerial = {
     .get_rx_handler = get_rx_handler,
     .get_tx_handler = get_tx_handler,
     .clear_handlers = clear_handlers,
+    .calculate_crc = calculate_crc,
+    .build_packet = build_packet,
 };

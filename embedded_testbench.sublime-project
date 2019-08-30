@@ -4,7 +4,7 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": [".ipynb_checkpoints", ".pytest_cache", "bin","build", "Debug", "etc", "include", "lib64","share"],
+			"folder_exclude_patterns": [".ipynb_checkpoints", ".pytest_cache", "bin","build", "Debug", "etc", "include", "lib64","share", "test/test_runners"],
 			"file_exclude_patterns": ["pyvenv.cfg", "embedded_testbench.mk", "embedded_testbench.project", "embedded_testbench.sublime-project", "embedded_testbench.txt", "notebook.ipynb", ".gitignore"]
 		}
 	],

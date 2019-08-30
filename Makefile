@@ -67,23 +67,25 @@ CURRENT_DIR = $(notdir $(shell pwd))
 
 all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so cppcheck
 
-cppcheck: $(CPPCHECK_RESULTS)
-	@echo ""
-	@echo "-----------------------CPPCHECK SUMMARY-----------------------"
-	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"	
-	@echo `find build/cppcheck_results/ -type f -exec grep error {} \;|wc -l` "code errors"
-	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
+# cppcheck: $(CPPCHECK_RESULTS)
+# 	@echo ""
+# 	@echo "-----------------------CPPCHECK SUMMARY-----------------------"
 
-test: all $(TEST_OBJS) $(TEST_RESULTS) 
+test: all $(TEST_OBJS) $(TEST_RESULTS) $(CPPCHECK_RESULTS)
 	@echo ""
-	@echo "-----------------------TESTING SUMMARY-----------------------"
-	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
-	@echo `grep -s IGNORE $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
-	@echo `grep -s FAIL $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -s PASS $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
+	@echo "-----------------------ANALYSIS AND TESTING SUMMARY-----------------------"
+	@echo `grep -sh IGNORE: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
+	@echo `grep -sh IGNORE: $(TEST_RESULTS_DIR)/*.txt`
+	@echo `grep -sh FAIL: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
+	@echo `grep -sh FAIL: $(TEST_RESULTS_DIR)/*.txt`
+	@echo `grep -sh PASS: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
 	@echo ""
 	@echo "$(MEM_LEAKS) memory leak(s) detected"
+	@echo ""
+	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"	
+	@echo ""
+	@echo `find build/cppcheck_results/ -type f -exec grep error {} \;|wc -l` "code errors"
+	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
 
 #link objects into an so to be included elsewhere
 $(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
