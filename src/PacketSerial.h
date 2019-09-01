@@ -11,11 +11,12 @@
 #include <pb_decode.h>
 #include <pb_encode.h>
 
+#include "ProtoBuff.h"
 #include "bithelper.h"
 #include "log.h"
 #include "type_shortcuts.h"
 
-typedef void (*PACKETSERIAL_HANDLER_FNP)(char*, size_t);
+typedef bool (*PACKETSERIAL_HANDLER_FNP)(u8*, size_t);
 
 #define member_size(type, member) sizeof(((type*)0)->member)
 

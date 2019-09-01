@@ -38,7 +38,7 @@ void test_adding_handler_twice_fails(void)
 void parse_inputreport(pb_istream_t* stream, const pb_field_t* type)
 {
     InputReport report;
-    if (ProtoBuff.decode(stream, type, &report)) {
+    if (ProtoBuff.decode_union(stream, type, &report)) {
         TEST_ASSERT_EQUAL_STRING("hello", report.data);
     } else {
         TEST_FAIL_MESSAGE("Failed to parse report");
@@ -53,15 +53,17 @@ void test_encode_decode_inputreport(void)
     strncpy(message.input_report.data, "hello", strlen("hello") + 1);
     uint8_t my_buffer[BUFFER_SIZE] = { 0 };
 
-    ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, BUFFER_SIZE, true);
-    ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    size_t encoded_size = ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, BUFFER_SIZE, true);
+    TEST_ASSERT_EQUAL(encoded_size, 10);
+    result = ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    TEST_ASSERT_TRUE(result);
 }
 
 //DeviceDescriptor tests
 void parse_devicedescriptor(pb_istream_t* stream, const pb_field_t* type)
 {
     DeviceDescriptor report;
-    if (ProtoBuff.decode(stream, type, &report)) {
+    if (ProtoBuff.decode_union(stream, type, &report)) {
         TEST_ASSERT_EQUAL_STRING("hello", report.iManufacturer);
     } else {
         TEST_FAIL_MESSAGE("Failed to parse report");
@@ -77,14 +79,15 @@ void test_encode_decode_devicedescriptor(void)
     uint8_t my_buffer[BUFFER_SIZE] = { 0 };
 
     ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, BUFFER_SIZE, true);
-    ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    result = ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    TEST_ASSERT_TRUE(result);
 }
 
 //HIDReport tests
 void parse_hidreport(pb_istream_t* stream, const pb_field_t* type)
 {
     HIDReport report;
-    if (ProtoBuff.decode(stream, type, &report)) {
+    if (ProtoBuff.decode_union(stream, type, &report)) {
         TEST_ASSERT_EQUAL_STRING("hello", report.data);
     } else {
         TEST_FAIL_MESSAGE("Failed to parse report");
@@ -100,5 +103,19 @@ void test_encode_decode_hidreport(void)
     uint8_t my_buffer[BUFFER_SIZE] = { 0 };
 
     ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, BUFFER_SIZE, true);
-    ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    result = ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, true);
+    TEST_ASSERT_TRUE(result);
+}
+void test_encode_decode_hidreport_undelimited(void)
+{
+    bool result = ProtoBuff.add_handler(HIDReport_fields, &parse_hidreport);
+    TEST_ASSERT_TRUE(result);
+    UnionMessage message = UnionMessage_init_zero;
+    message.has_hid_report = true;
+    strncpy(message.hid_report.data, "hello", strlen("hello") + 1);
+    uint8_t my_buffer[BUFFER_SIZE] = { 0 };
+
+    int size = ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, BUFFER_SIZE, false);
+    result = ProtoBuff.unmarshal(my_buffer, BUFFER_SIZE, false);
+    TEST_ASSERT_TRUE(result);
 }

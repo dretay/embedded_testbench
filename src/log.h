@@ -17,24 +17,24 @@
                 __LINE__, __func__, __VA_ARGS__);                 \
         printf("\r\n");                                           \
     } while (0)
-#define _WARN(fmt, ...)                                           \
-    do {                                                          \
-        if (DEBUG)                                                \
-            fprintf(stderr, "[ERROR] %s:%d:%s(): " fmt, __FILE__, \
-                __LINE__, __func__, __VA_ARGS__);                 \
-        printf("\r\n");                                           \
+#define _WARN(fmt, ...)                                          \
+    do {                                                         \
+        if (DEBUG)                                               \
+            fprintf(stderr, "[WARN] %s:%d:%s(): " fmt, __FILE__, \
+                __LINE__, __func__, __VA_ARGS__);                \
+        printf("\r\n");                                          \
     } while (0)
-#define _INFO(fmt, ...)                                           \
-    do {                                                          \
-        if (DEBUG)                                                \
-            fprintf(stderr, "[ERROR] %s:%d:%s(): " fmt, __FILE__, \
-                __LINE__, __func__, __VA_ARGS__);                 \
-        printf("\r\n");                                           \
+#define _INFO(fmt, ...)                                          \
+    do {                                                         \
+        if (DEBUG)                                               \
+            fprintf(stderr, "[INFO] %s:%d:%s(): " fmt, __FILE__, \
+                __LINE__, __func__, __VA_ARGS__);                \
+        printf("\r\n");                                          \
     } while (0)
 #define _DEBUG(fmt, ...)                                          \
     do {                                                          \
         if (DEBUG)                                                \
-            fprintf(stderr, "[ERROR] %s:%d:%s(): " fmt, __FILE__, \
+            fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt, __FILE__, \
                 __LINE__, __func__, __VA_ARGS__);                 \
         printf("\r\n");                                           \
     } while (0)

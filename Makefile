@@ -59,14 +59,15 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 CURRENT_DIR = $(notdir $(shell pwd))
 
 .PHONY: all
+.PHONY: sharedobject
 .PHONY: test
 .PHONY: jupyter
 .PHONY: pythondeps
 .PHONY: clean
 .PHONY: cppcheck
 
-all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so cppcheck
-
+all: $(PBMODELS) $(RUNNERS) $(OBJS) cppcheck
+sharedobject: $(BUILD_DIR)$(CURRENT_DIR).so
 # cppcheck: $(CPPCHECK_RESULTS)
 # 	@echo ""
 # 	@echo "-----------------------CPPCHECK SUMMARY-----------------------"
@@ -74,11 +75,11 @@ all: $(PBMODELS) $(RUNNERS) $(OBJS) $(BUILD_DIR)/$(CURRENT_DIR).so cppcheck
 test: all $(TEST_OBJS) $(TEST_RESULTS) $(CPPCHECK_RESULTS)
 	@echo ""
 	@echo "-----------------------ANALYSIS AND TESTING SUMMARY-----------------------"
-	@echo `grep -sh IGNORE: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
-	@echo `grep -sh IGNORE: $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -sh FAIL: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
-	@echo `grep -sh FAIL: $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -sh PASS: $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
+	@echo `grep -sh :IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
+	@echo `grep -sh :IGNORE $(TEST_RESULTS_DIR)/*.txt`
+	@echo `grep -sh :FAIL $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
+	@echo `grep -sh :FAIL $(TEST_RESULTS_DIR)/*.txt`
+	@echo `grep -sh :PASS $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
 	@echo ""
 	@echo "$(MEM_LEAKS) memory leak(s) detected"
 	@echo ""
@@ -88,7 +89,7 @@ test: all $(TEST_OBJS) $(TEST_RESULTS) $(CPPCHECK_RESULTS)
 	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
 
 #link objects into an so to be included elsewhere
-$(BUILD_DIR)/$(CURRENT_DIR).so: $(OBJS)
+$(BUILD_DIR)$(CURRENT_DIR).so: $(OBJS)
 	$(LD) $(OBJS) -shared -o $@
 
 #execute tests

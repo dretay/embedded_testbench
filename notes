@@ -6,3 +6,6 @@ sublime plugins
 makefile
 
 to dump a variable: $(info $$var is [${var}])
+
+run an individual test:
+rm build/TestPacketSerial.c.o.out&& make&&make build/TestPacketSerial.c.o.out && ./build/TestPacketSerial.c.o.out -v
