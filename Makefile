@@ -52,7 +52,7 @@ INC_DIRS := $(shell find $(LIB_DIRS) -maxdepth 1 -type d)
 CPPCHECK = cppcheck
 CPPCHECK_FILES := $(shell find $(SRC_DIRS) -maxdepth 2 \( -iname "*.c" ! -iname "*.pb.c" \))
 CPPCHECK_FLAGS = -q --enable=all --inconclusive --suppress=missingIncludeSystem
-CPPCHECK_RESULTS = $(CPPCHECK_FILES:%=$(CPPCHECK_RESULTS_DIR)%.txt) 
+CPPCHECK_RESULTS = $(CPPCHECK_FILES:%=$(CPPCHECK_RESULTS_DIR)%.txt)
 
 #misc variables
 DIRECTIVES = -DPB_FIELD_16BIT -DLOG_USE_COLOR -DUNITY_OUTPUT_COLOR
@@ -83,8 +83,8 @@ test: all $(TEST_OBJS) $(TEST_RESULTS) $(CPPCHECK_RESULTS)
 	@echo ""
 	@echo "$(MEM_LEAKS) memory leak(s) detected"
 	@echo ""
-	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"	
-	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;` 
+	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"
+	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;`
 	@echo `find build/cppcheck_results/ -type f -exec grep error {} \;|wc -l` "code errors"
 	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
 
@@ -102,26 +102,26 @@ $(PROFILING_RESULTS_DIR)%.out: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 #execute tests
 $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 	$(MKDIR) $(dir $@)
-	@$(VALGRIND) --suppressions=$(VALGRIND_SUPPS) --gen-suppressions=all --tool=memcheck --leak-check=full $< 
+	@$(VALGRIND) --suppressions=$(VALGRIND_SUPPS) --gen-suppressions=all --tool=memcheck --leak-check=full $< > $@ 2>&1
 
 #build the test runners
 $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
 	$(CC) -o $@ $^ $(CFLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
 
 # assembly
-$(BUILD_DIR)%.s.o: %.s	
+$(BUILD_DIR)%.s.o: %.s
 	$(MKDIR) $(dir $@)
 	$(AS) $(ASFLAGS) -c $< -o $@
 
 #execute cppcheck
-$(CPPCHECK_RESULTS_DIR)%.c.txt: %.c 
+$(CPPCHECK_RESULTS_DIR)%.c.txt: %.c
 	$(MKDIR) $(dir $@)
 	$(CPPCHECK) $(INC_FLAGS) $(DIRECTIVES) $(CPPCHECK_FLAGS) $< > $@ 2>&1
 
 # c source
-$(BUILD_DIR)%.c.o: %.c 
+$(BUILD_DIR)%.c.o: %.c
 	$(MKDIR) $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # protocol buffer models
 $(SRC_DIRS)%.pb.c:: $(SRC_DIRS)%.proto
@@ -136,7 +136,7 @@ jupyter: all pythondeps
 		jupyter notebook; \
 	)
 
-pythondeps: 
+pythondeps:
 	( \
 		. ./bin/activate; \
 		pip install -r ./requirements.txt; \
