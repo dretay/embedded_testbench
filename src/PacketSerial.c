@@ -14,7 +14,6 @@ static u8 calculate_crc(const char* buffer, size_t size)
 static void build_packet(Packet* packet, const char* buffer, size_t size, u8 sequence_number, Packet_Flag flag)
 {
     strncpy(packet->data, buffer, size);
-    printf("\n%s\n\n", packet->data);
     packet->crc = calculate_crc(packet->data, size);
     packet->sequence_number = sequence_number;
     packet->flag = flag;

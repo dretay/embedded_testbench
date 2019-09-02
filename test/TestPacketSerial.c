@@ -68,14 +68,16 @@ void test_build_packet(void)
     TEST_ASSERT_EQUAL(packet.crc, crc);
     TEST_ASSERT_EQUAL(packet.flag, flag);
 }
-void dummy_test_marshal_unmarshal_packet_parser(pb_istream_t* stream)
+bool dummy_test_marshal_unmarshal_packet_parser(pb_istream_t* stream)
 {
     Packet packet;
     if (ProtoBuff.decode(stream, Packet_fields, &packet)) {
         TEST_ASSERT_EQUAL_STRING("test", packet.data);
     } else {
         TEST_FAIL_MESSAGE("Failed to parse packet");
+        return false;
     }
+    return true;
 }
 void test_marshal_unmarshal_packet(void)
 {
@@ -99,7 +101,7 @@ void test_marshal_unmarshal_packet(void)
     ProtoBuff.explicit_unmarshal(buffer, Packet_size, true, dummy_test_marshal_unmarshal_packet_parser);
 }
 
-void dummy_test_send_small_packet_packet_parser(pb_istream_t* stream)
+bool dummy_test_send_small_packet_packet_parser(pb_istream_t* stream)
 {
     Packet packet;
     if (ProtoBuff.decode(stream, Packet_fields, &packet)) {
@@ -107,7 +109,9 @@ void dummy_test_send_small_packet_packet_parser(pb_istream_t* stream)
         TEST_ASSERT_EQUAL(packet.flag, Packet_Flag_FIRSTLAST);
     } else {
         TEST_FAIL_MESSAGE("Failed to parse packet");
+        return false;
     }
+    return true;
 }
 bool dummy_test_send_small_packet_tx_handler(u8* buffer, size_t size)
 {
@@ -126,7 +130,7 @@ void test_send_small_packet(void)
 
 char dummy_test_send_big_packet_messages[3][100];
 int dummy_test_send_big_packet_counter = 0;
-void dummy_test_send_big_packet_packet_parser(pb_istream_t* stream)
+bool dummy_test_send_big_packet_packet_parser(pb_istream_t* stream)
 {
     Packet packet;
     if (ProtoBuff.decode(stream, Packet_fields, &packet)) {
@@ -142,7 +146,9 @@ void dummy_test_send_big_packet_packet_parser(pb_istream_t* stream)
         }
     } else {
         TEST_FAIL();
+        return false;
     }
+    return true;
 }
 bool dummy_test_send_big_packet_tx_handler(u8* buffer, size_t size)
 {
@@ -154,5 +160,86 @@ void test_send_big_packet(void)
     PacketSerial.register_tx_handler(&dummy_test_send_big_packet_tx_handler);
     char data[] = "test1test2test3test4test5test6test7test";
     bool success = PacketSerial.send(data, sizeof(data));
+    TEST_ASSERT_TRUE(success);
+}
+
+void dummy_test_send_little_hid_report_parse_hidreport(pb_istream_t* stream, const pb_field_t* type)
+{
+    HIDReport report;
+    if (ProtoBuff.decode_union(stream, type, &report)) {
+        TEST_ASSERT_EQUAL_STRING("hello", report.data);
+    } else {
+        TEST_FAIL_MESSAGE("Failed to parse report");
+    }
+}
+bool dummy_test_send_little_hid_report_tx_handler(u8* buffer, size_t size)
+{
+    return ProtoBuff.explicit_unmarshal(buffer, size, true, dummy_test_send_big_packet_packet_parser);
+}
+
+void test_send_little_hid_report(void)
+{
+    bool result = ProtoBuff.add_handler(HIDReport_fields, &dummy_test_send_little_hid_report_parse_hidreport);
+    UnionMessage message = UnionMessage_init_zero;
+    message.has_hid_report = true;
+    strncpy(message.hid_report.data, "hello", strlen("hello") + 1);
+    uint8_t my_buffer[100] = { 0 };
+    int size = ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, 100, true);
+
+    PacketSerial.register_tx_handler(&dummy_test_send_little_hid_report_tx_handler);
+    bool success = PacketSerial.send((char*)my_buffer, size);
+    TEST_ASSERT_TRUE(success);
+}
+
+char dummy_test_send_big_hid_report_messages[3][100];
+int dummy_test_send_big_hid_report_counter = 0;
+void dummy_test_send_big_hid_report_parse_hidreport(pb_istream_t* stream, const pb_field_t* type)
+{
+    HIDReport report;
+    if (ProtoBuff.decode_union(stream, type, &report)) {
+        TEST_ASSERT_EQUAL_STRING("hello", report.data);
+    } else {
+        TEST_FAIL_MESSAGE("Failed to parse report");
+    }
+}
+bool dummy_test_send_big_hid_report_packet_parser(pb_istream_t* stream)
+{
+    Packet packet;
+    printf("%c", dummy_test_send_big_hid_report_messages[0][0]);
+    if (ProtoBuff.decode(stream, Packet_fields, &packet)) {
+        int packet_data_size = member_size(Packet, data);
+        strncpy(dummy_test_send_big_packet_messages[dummy_test_send_big_packet_counter], packet.data, packet_data_size);
+
+        dummy_test_send_big_packet_counter++;
+        if (packet.flag == Packet_Flag_LAST) {
+            char mega_buffer[300];
+            strcpy(mega_buffer, dummy_test_send_big_hid_report_messages[0]);
+            strcpy(mega_buffer, dummy_test_send_big_hid_report_messages[1]);
+            strcpy(mega_buffer, dummy_test_send_big_hid_report_messages[2]);
+            bool result = ProtoBuff.unmarshal((u8*)mega_buffer, 300, false);
+            TEST_ASSERT_TRUE(result);
+        }
+    } else {
+        TEST_FAIL();
+        return false;
+    }
+    return true;
+}
+bool dummy_test_send_big_hid_report_tx_handler(u8* buffer, size_t size)
+{
+    return ProtoBuff.explicit_unmarshal(buffer, size, true, dummy_test_send_big_hid_report_packet_parser);
+}
+
+void test_send_big_hid_report(void)
+{
+    bool result = ProtoBuff.add_handler(HIDReport_fields, &dummy_test_send_big_hid_report_parse_hidreport);
+    UnionMessage message = UnionMessage_init_zero;
+    message.has_hid_report = true;
+    strncpy(message.hid_report.data, "test1test2test3test4test5test6test7test", strlen("test1test2test3test4test5test6test7test") + 1);
+    uint8_t my_buffer[100] = { 0 };
+    int size = ProtoBuff.marshal(&message, UnionMessage_fields, my_buffer, 100, true);
+
+    PacketSerial.register_tx_handler(&dummy_test_send_big_hid_report_tx_handler);
+    bool success = PacketSerial.send((char*)my_buffer, size);
     TEST_ASSERT_TRUE(success);
 }

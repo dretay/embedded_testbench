@@ -1,5 +1,5 @@
 {
-	
+
 	"folders":
 	[
 		{
@@ -12,6 +12,15 @@
 	    "ClangFormat": {
 	      "format_on_save": true,
 	      "style": "webkit",
-	    }	    	  
+	    },
+		"sublimegdb_executables":
+         {
+             "TestPacketSerial.c.o.out":
+             {
+                 "workingdir": "${folder:${project_path:build/TestPacketSerial.c.o.out}}",
+                 "commandline": "gdb --interpreter=mi ./TestPacketSerial.c.o.out",
+                 "env": {"DISPLAY": ":100"}
+             },
+         }
   	}
 }

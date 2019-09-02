@@ -79,6 +79,7 @@ static bool _unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited, PROTOBUFF
     pb_istream_t parent_stream = pb_istream_from_buffer(buf, bufsize);
     pb_istream_t* decode_stream = &parent_stream;
     pb_istream_t sub_stream;
+    bool retval = false;
     if (delimited) {
         log_trace("attempting to decode a delimited message");
         if (!pb_make_string_substream(&parent_stream, &sub_stream)) {
@@ -90,27 +91,30 @@ static bool _unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited, PROTOBUFF
         log_debug("attempting to decode a non-delimited message");
     }
 
-    callback(decode_stream);
+    retval = callback(decode_stream);
 
     if (delimited) {
         if (!pb_close_string_substream(&parent_stream, decode_stream)) {
             log_error("unable to close substream");
+            return false;
         }
     }
-    return true;
+    return retval;
 }
 static bool explicit_unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited, PROTOBUFF_UNMARSHAL_CALLBACK_FNP callback)
 {
     return _unmarshal(buf, bufsize, delimited, callback);
 }
-static void _unmarshal_lookup_callback(pb_istream_t* decode_stream)
+static bool _unmarshal_lookup_callback(pb_istream_t* decode_stream)
 {
     const pb_field_t* type = decode_unionmessage_type(decode_stream);
     int idx = find_handler(type);
     if (idx_valid(idx)) {
         handlers[idx].callback(decode_stream, type);
+        return true;
     } else {
         log_error("unknown type");
+        return false;
     }
 }
 static bool unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited)

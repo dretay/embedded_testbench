@@ -12,7 +12,7 @@
 #include "hid.pb.h"
 #include "log.h"
 
-typedef void (*PROTOBUFF_UNMARSHAL_CALLBACK_FNP)(pb_istream_t*);
+typedef bool (*PROTOBUFF_UNMARSHAL_CALLBACK_FNP)(pb_istream_t*);
 
 typedef struct {
     const pb_field_t* type;
