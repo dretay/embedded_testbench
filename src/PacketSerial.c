@@ -27,7 +27,6 @@ static bool send(const char* buffer, size_t size)
     unsigned int total_chunks = (size + data_chunk_size - 1) / data_chunk_size;
     bool return_status = true;
     const char* buffer_offset = buffer;
-    printf("\n\n%d total_chunks\n\n", total_chunks);
     for (int i = 0; i < total_chunks; i++) {
         Packet packet = Packet_init_zero;
 
@@ -35,23 +34,23 @@ static bool send(const char* buffer, size_t size)
         int packet_data_chunk_size = 0;
 
         if (i == 0 && total_chunks == 1) {
-            _DEBUG("Constructing firstlast packet in sequence", 0);
+            log_trace("Constructing firstlast packet in sequence");
             flag = Packet_Flag_FIRSTLAST;
             packet_data_chunk_size = size;
         } else if (i == 0 && total_chunks > 1) {
-            _DEBUG("Constructing first packet in sequence", 0);
+            log_trace("Constructing first packet in sequence");
             flag = Packet_Flag_FIRST;
             packet_data_chunk_size = data_chunk_size;
         } else if (i > 0 && i < total_chunks - 1) {
-            _DEBUG("Constructing next packet in sequence", 0);
+            log_trace("Constructing next packet in sequence");
             flag = Packet_Flag_CONTINUE;
             packet_data_chunk_size = data_chunk_size;
         } else {
-            _DEBUG("Constructing last packet in sequence", 0);
+            log_trace("Constructing last packet in sequence");
             flag = Packet_Flag_LAST;
             packet_data_chunk_size = size % data_chunk_size;
         }
-        _DEBUG("packet data chunk size set to %d", packet_data_chunk_size);
+        log_trace("packet data chunk size set to %d", packet_data_chunk_size);
 
         build_packet(&packet, buffer_offset, packet_data_chunk_size, i, flag);
         buffer_offset += packet_data_chunk_size;
@@ -60,11 +59,11 @@ static bool send(const char* buffer, size_t size)
         size_t size = ProtoBuff.marshal(&packet, Packet_fields, buffer, Packet_size, true);
 
         if (tx_handler != NULL) {
-            _DEBUG("Transmitted %ld bytes of %d buffer for packet %d of %d", size, Packet_size, i, total_chunks - 1);
+            log_trace("Transmitted %ld bytes of %d buffer for packet %d of %d", size, Packet_size, i, total_chunks - 1);
             bool tx_result = tx_handler(buffer, size);
             return_status = return_status && tx_result;
         } else {
-            _ERROR("tx handler undefined!", 0);
+            log_error("tx handler undefined!");
             return false;
         }
     }

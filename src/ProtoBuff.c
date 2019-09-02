@@ -46,12 +46,12 @@ static size_t marshal(void* src, const pb_field_t fields[], pb_byte_t* buf, size
 
     /* Now we are ready to encode the message! */
     if (delimited) {
-        _DEBUG("attempting to encode a delimited message", 0);
+        log_trace("attempting to encode a delimited message");
         if (!pb_encode_delimited(&stream, fields, src)) {
             return -1;
         }
     } else {
-        _DEBUG("attempting to encode a non-delimited message", 0);
+        log_trace("attempting to encode a non-delimited message");
         if (!pb_encode(&stream, fields, src)) {
             return -1;
         }
@@ -80,21 +80,21 @@ static bool _unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited, PROTOBUFF
     pb_istream_t* decode_stream = &parent_stream;
     pb_istream_t sub_stream;
     if (delimited) {
-        _DEBUG("attempting to decode a delimited message", 0);
+        log_trace("attempting to decode a delimited message");
         if (!pb_make_string_substream(&parent_stream, &sub_stream)) {
-            _ERROR("unable to make substream", 0);
+            log_error("unable to make substream");
             return false;
         }
         decode_stream = &sub_stream;
     } else {
-        _DEBUG("attempting to decode a non-delimited message", 0);
+        log_debug("attempting to decode a non-delimited message");
     }
 
     callback(decode_stream);
 
     if (delimited) {
         if (!pb_close_string_substream(&parent_stream, decode_stream)) {
-            _ERROR("unable to close substream", 0);
+            log_error("unable to close substream");
         }
     }
     return true;
@@ -110,7 +110,7 @@ static void _unmarshal_lookup_callback(pb_istream_t* decode_stream)
     if (idx_valid(idx)) {
         handlers[idx].callback(decode_stream, type);
     } else {
-        _ERROR("unknown type", 0);
+        log_error("unknown type");
     }
 }
 static bool unmarshal(pb_byte_t* buf, size_t bufsize, bool delimited)
@@ -133,7 +133,7 @@ static bool add_handler(const pb_field_t* type, void* callback)
 {
     int idx = find_handler(type);
     if (idx_valid(idx)) {
-        _ERROR("type entry already exists", 0);
+        log_error("type entry already exists");
         return false;
     }
     idx = get_unused_idx();
@@ -142,7 +142,7 @@ static bool add_handler(const pb_field_t* type, void* callback)
         handlers[idx].type = type;
         return true;
     } else {
-        _ERROR("handler list is full", 0);
+        log_error("handler list is full");
     }
     return false;
 }

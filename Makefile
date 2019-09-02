@@ -16,6 +16,7 @@ endif
 #directories
 BUILD_DIR = build/
 TEST_RESULTS_DIR = build/test_results/
+PROFILING_RESULTS_DIR = build/profiling_results/
 CPPCHECK_RESULTS_DIR = build/cppcheck_results/
 TEST_OUTPUT = build/test/
 SRC_DIRS = src/
@@ -33,6 +34,7 @@ PB_OBJS = $(patsubst $(SRC_DIRS)%.proto,$(BUILD_DIR)$(SRC_DIRS)%.pb.c.o,$(SRCPB)
 SRCT = $(wildcard $(TEST_DIRS)*.c)
 RUNNERS = $(patsubst $(TEST_DIRS)%.c,$(TEST_RUNNERS)%.c,$(SRCT) )
 TEST_RESULTS = $(patsubst $(TEST_DIRS)Test%.c,$(TEST_RESULTS_DIR)Test%.txt,$(SRCT) )
+PROFILING_RESULTS = $(patsubst $(TEST_DIRS)Test%.c,$(PROFILING_RESULTS_DIR)Test%.out,$(SRCT) )
 TEST_OBJS = $(SRCT:%=$(BUILD_DIR)%.o)
 UNITY_ROOT=/home/drew/src/Unity
 
@@ -53,14 +55,15 @@ CPPCHECK_FLAGS = -q --enable=all --inconclusive --suppress=missingIncludeSystem
 CPPCHECK_RESULTS = $(CPPCHECK_FILES:%=$(CPPCHECK_RESULTS_DIR)%.txt) 
 
 #misc variables
-DIRECTIVES = -DPB_FIELD_16BIT
-CFLAGS = $(INC_FLAGS) $(DIRECTIVES) -fPIC -Wno-format-extra-args
+DIRECTIVES = -DPB_FIELD_16BIT -DLOG_USE_COLOR -DUNITY_OUTPUT_COLOR
+CFLAGS = $(INC_FLAGS) $(DIRECTIVES) -fPIC -Wno-format-extra-args -g3
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I$(UNITY_ROOT)/src -I./src
 CURRENT_DIR = $(notdir $(shell pwd))
 
 .PHONY: all
 .PHONY: sharedobject
 .PHONY: test
+.PHONY: profile
 .PHONY: jupyter
 .PHONY: pythondeps
 .PHONY: clean
@@ -68,38 +71,42 @@ CURRENT_DIR = $(notdir $(shell pwd))
 
 all: $(PBMODELS) $(RUNNERS) $(OBJS) cppcheck
 sharedobject: $(BUILD_DIR)$(CURRENT_DIR).so
-# cppcheck: $(CPPCHECK_RESULTS)
-# 	@echo ""
-# 	@echo "-----------------------CPPCHECK SUMMARY-----------------------"
 
 test: all $(TEST_OBJS) $(TEST_RESULTS) $(CPPCHECK_RESULTS)
 	@echo ""
 	@echo "-----------------------ANALYSIS AND TESTING SUMMARY-----------------------"
-	@echo `grep -sh :IGNORE $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests ignored"
-	@echo `grep -sh :IGNORE $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -sh :FAIL $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests failed"
-	@echo `grep -sh :FAIL $(TEST_RESULTS_DIR)/*.txt`
-	@echo `grep -sh :PASS $(TEST_RESULTS_DIR)/*.txt|wc -l` "tests passed"
+	@echo `grep -sh IGNORE $(TEST_RESULTS_DIR)*.txt|wc -l` "tests ignored"
+	@echo `grep -sh IGNORE $(TEST_RESULTS_DIR)*.txt`
+	@echo `grep -sh FAIL $(TEST_RESULTS_DIR)*.txt|wc -l` "tests failed"
+	@echo `grep -sh FAIL $(TEST_RESULTS_DIR)*.txt`
+	@echo `grep -sh PASS $(TEST_RESULTS_DIR)*.txt|wc -l` "tests passed"
 	@echo ""
 	@echo "$(MEM_LEAKS) memory leak(s) detected"
 	@echo ""
 	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;|wc -l` "code warnings"	
-	@echo ""
+	@echo `find build/cppcheck_results/ -type f -exec grep warning {} \;` 
 	@echo `find build/cppcheck_results/ -type f -exec grep error {} \;|wc -l` "code errors"
 	@echo "`find build/cppcheck_results/ -type f -exec grep error {} \;`"
+
+profile: all $(PROFILING_RESULTS)
 
 #link objects into an so to be included elsewhere
 $(BUILD_DIR)$(CURRENT_DIR).so: $(OBJS)
 	$(LD) $(OBJS) -shared -o $@
 
+#generate profiling data
+$(PROFILING_RESULTS_DIR)%.out: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
+	$(MKDIR) $(dir $@)
+	-$(VALGRIND) --tool=callgrind --callgrind-out-file=$@  $< > /dev/null 2>&1
+
 #execute tests
 $(TEST_RESULTS_DIR)%.txt: $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION)
 	$(MKDIR) $(dir $@)
-	-$(VALGRIND) --suppressions=$(VALGRIND_SUPPS) --gen-suppressions=all --tool=memcheck --leak-check=full $< > $@ 2>&1
+	@$(VALGRIND) --suppressions=$(VALGRIND_SUPPS) --gen-suppressions=all --tool=memcheck --leak-check=full $< 
 
 #build the test runners
 $(BUILD_DIR)%.c.o.$(TARGET_EXTENSION): $(TEST_OUTPUT)%.c.o
-	$(CC) -o $@ $^ $(INC_FLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
+	$(CC) -o $@ $^ $(CFLAGS) $(OBJS) $(UNITY_ROOT)/src/unity.c $(TEST_RUNNERS)$(basename $(notdir $<))
 
 # assembly
 $(BUILD_DIR)%.s.o: %.s	
@@ -139,5 +146,6 @@ clean:
 	$(CLEANUP) $(OBJS) $(TEST_OBJS)	$(TEST_RESULTS) $(CPPCHECK_RESULTS) $(BUILD_DIR)*.out $(SRC_DIRS)*.pb.*
 
 .PRECIOUS: $(TEST_RESULTS_DIR)%.txt
+.PRECIOUS: $(PROFILING_RESULTS_DIR)%.txt
 .PRECIOUS: $(BUILD_DIR)%.c.o.out
 .PRECIOUS: $(PBMODELS)
